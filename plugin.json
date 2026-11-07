@@ -1,10 +1,11 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "vibe-coding-assistant",
-  "version": "0.2.6",
-  "description": "First-party coding skills, interactive MCP Apps for Git and requirements, and evidence-based capability evolution.",
+  "version": "0.2.7",
+  "description": "Guided coding workflows for understanding repositories, clarifying requirements, implementing features, and reviewing changes.",
   "extensions": {
     "com.openai": {
+      "onboardingSkill": "./skills/vibe-onboarding/SKILL.md",
       "interface": {
         "displayName": "AkiCode"
       }

@@ -1,6 +1,14 @@
 # AkiCode
 
-一个面向 Codex 的 Vibe Coding 插件，提供仓库理解、需求澄清、参考功能分析、Git 工作区和基于证据的自我迭代能力，并通过 MCP Apps 在 Codex 宿主内展示与操作。上游项目只作为设计参考；本插件运行时不依赖它们的 CLI、插件或源码。
+一个面向 Codex 的 Vibe Coding 插件，帮助用户从理解仓库、澄清需求走到实现与审查，并通过 MCP Apps 在 Codex 宿主内查看和操作 Git。它也能分析可访问的参考功能，支持对 AkiCode 自身进行基于证据的迭代。上游项目只作为设计参考；本插件运行时不依赖它们的 CLI、插件或源码。
+
+## 第一次使用
+
+安装插件后在 Codex 运行 setup 时，宿主会调用 `vibe-onboarding`，用简短介绍说明插件能做什么，并带你选择第一项任务。也可以随时调用 `$vibe-onboarding` 重新查看。
+
+如果你已经知道要做什么，直接说需求即可；常规开发任务从 `$vibe-code` 开始，它会按需要组合仓库理解、需求澄清、规划、实现和审查。也可以单独使用 `$vibe-understand` 了解仓库、`$vibe-reference` 分析参考功能、`$vibe-review` 审查改动，或 `$vibe-git` 查看状态并操作本地提交。
+
+例如：刚接手项目时用 `$vibe-understand` 找登录请求的入口；想添加 CSV 导出时直接描述目标并让 `$vibe-code` 帮你推进；想参考其他产品的导入流程时用 `$vibe-reference`；准备检查或提交本地改动时用 `$vibe-review` 或 `$vibe-git`。
 
 ## Agent 开始前必读
 
@@ -17,6 +25,7 @@
 ├── AGENTS.md
 ├── README.md
 ├── skills/
+│   ├── vibe-onboarding/SKILL.md  # 首次使用介绍与工作流导航
 │   ├── vibe-code/SKILL.md       # 端到端工作流编排
 │   ├── vibe-understand/         # 仓库结构、入口、依赖与调用链理解
 │   ├── vibe-plan/               # 生成 OpenSpec 兼容的规划产物
@@ -54,6 +63,7 @@
 - **`vibe-plan`**：把需求转为提案、需求场景、设计决策和任务清单；经 MCP 工具原子写入 OpenSpec 兼容目录，并在 Git 私有 exclude 中忽略新生成的计划。目标目录已存在时拒绝覆盖。
 - **`vibe-review`**：先列出确切变更文件，再逐文件读取 staged、unstaged、untracked 或分支 Diff；Codex 模型负责核验问题与严重程度，工具只提供本地 Git 证据。
 - **`vibe-code`**：开始时读取本地迭代摘要，核对其与当前代码是否一致；编排仓库理解、规划、实现和审查，并在完成核对后追加一条本地摘要。
+- **`vibe-onboarding`**：在插件 setup 后介绍 AkiCode 的用途和实际能力，按用户当前目标导航到合适的 Skill；用户已有明确任务时直接交接，不强迫走教程。
 - **`vibe-requirements`**：识别会改变实现方向的未决事项，通过需求 MCP App 收集用户选择；需求界面只把答案发回对话，不写源码。
 - **`vibe-reference`**：从当前会话可访问的参考应用、网站、源码、截图或文档中分析指定功能，给出可追溯的行为模型并标注未知；不复制参考实现。
 - **`vibe-git`**：打开 Git 工作区 MCP App，让用户查看分支、状态和 Diff，选择暂存/撤销暂存，并二次确认本地提交；不 push、不丢弃文件或重写历史。
@@ -64,7 +74,7 @@
 - **需求决策 MCP App**：以 Codex 宿主内 iframe 表单展示用户要决定的问题。提交后经 MCP Apps 消息桥回传；若宿主不支持消息，则保留复制回退。
 - **Git 工作区 MCP App**：展示本地 Git 状态和 Diff，用户可以对当前变更清单中的路径暂存、撤销暂存，并在检查文件清单和提交说明后确认本地 commit。提交前校验暂存区未变化。不会 push。
 
-每项能力均可独立调用：`$vibe-understand`、`$vibe-plan`、`$vibe-review`、`$vibe-requirements`、`$vibe-reference`、`$vibe-git`、`$vibe-architecture`、`$vibe-evolve`；端到端流程使用 `$vibe-code`。Skills 通过 `vibe-coding-local` MCP server 调用第一方工具；三个 MCP Apps 分别由 `vibe_open_architecture_canvas`、`vibe_open_requirements_canvas` 和 `vibe_open_git_workspace` 打开。
+首次使用可通过 `$vibe-onboarding` 浏览项目介绍和下一步建议。其他能力均可独立调用：`$vibe-understand`、`$vibe-plan`、`$vibe-review`、`$vibe-requirements`、`$vibe-reference`、`$vibe-git`、`$vibe-architecture`、`$vibe-evolve`；端到端流程使用 `$vibe-code`。Skills 通过 `vibe-coding-local` MCP server 调用第一方工具；三个 MCP Apps 分别由 `vibe_open_architecture_canvas`、`vibe_open_requirements_canvas` 和 `vibe_open_git_workspace` 打开。
 
 ## 本地服务
 

@@ -15,6 +15,7 @@
 
 ```text
 Codex 用户
+  ├── 插件 setup ─────────> vibe-onboarding ──介绍与目标导航──> 对应 Skill
   ├── vibe-requirements ──> 需求决策 MCP App ──用户选择──> 当前对话 / vibe-code
   ├── vibe-reference ─────> 参考材料检查 → 证据化行为模型 → vibe-requirements / vibe-plan
   ├── vibe-git ───────────> Git 工作区 MCP App ──点击确认──> status / diff / stage / unstage / commit
@@ -33,5 +34,7 @@ Codex 用户
 ```
 
 Skills 暴露用户工作流并保留模型判断；MCP 将路径校验、文件清单、Git Diff、用户指定 Git 操作、架构图、需求表和本地状态存取固定为可复用操作。MCP 服务只在本机运行、无网络访问。读取工具拒绝符号链接并限制文件大小；写入工具不覆盖用户文件。规划和迭代摘要通过 Git 私有 exclude 默认保持本地。Git App 只操作服务端重新核验的仓库内变更路径，提交先核对预览的暂存区状态，不 push；界面消息由用户主动提交，后续代码变更沿用 `vibe-code` 工作流。
+
+`plugin.json` 的 `extensions.com.openai.onboardingSkill` 将 setup 导航连接到独立的 `vibe-onboarding` Skill。该 Skill 介绍实际能力并交接到现有工作流，不增加 MCP 工具，也不在引导阶段读取或写入仓库。
 
 函数/方法长度和源码文件行数由 `mcp-server/check-size.mjs` 使用 TypeScript AST 约束。源码按 `core/`、`shared/`、`tools/`、`ui/` 拆分，避免单一工具文件同时承担协议、领域逻辑、界面与文件访问。

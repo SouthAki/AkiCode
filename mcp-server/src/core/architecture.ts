@@ -37,6 +37,15 @@ export const ARCHITECTURE_GRAPH: ArchitectureGraph = {
       y: 350
     },
     {
+      id: "vibe-onboarding",
+      title: "vibe-onboarding",
+      kind: "skill",
+      summary: "在插件 setup 后介绍 AkiCode，并按用户目标导航到对应工作流。",
+      paths: ["plugin.json", "skills/vibe-onboarding/SKILL.md"],
+      x: 80,
+      y: 80
+    },
+    {
       id: "vibe-architecture",
       title: "vibe-architecture",
       kind: "skill",
@@ -202,12 +211,15 @@ export const ARCHITECTURE_GRAPH: ArchitectureGraph = {
     }
   ],
   edges: [
+    { from: "user", to: "vibe-onboarding", label: "首次使用" },
     { from: "user", to: "vibe-architecture", label: "浏览 / 调整" },
     { from: "user", to: "vibe-code", label: "开发请求" },
     { from: "user", to: "vibe-evolve", label: "反馈 / 诊断" },
     { from: "user", to: "vibe-requirements", label: "澄清决策" },
     { from: "user", to: "vibe-reference", label: "借鉴功能" },
     { from: "user", to: "vibe-git", label: "查看 / 操作 Git" },
+    { from: "vibe-onboarding", to: "vibe-code", label: "开始常规开发" },
+    { from: "vibe-onboarding", to: "vibe-understand", label: "了解仓库" },
     { from: "vibe-architecture", to: "canvas", label: "打开画布" },
     { from: "canvas", to: "vibe-code", label: "提交调整意图" },
     { from: "vibe-code", to: "vibe-understand", label: "理解" },
