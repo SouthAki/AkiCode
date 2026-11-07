@@ -35,13 +35,32 @@ interface PointerDrag {
   lastX: number;
   lastY: number;
   moved: boolean;
+  nodeId: string | null;
+}
+
+interface CanvasTheme {
+  accent: string;
+  edge: string;
+  edgeLabel: string;
+  gridDot: string;
+  node: string;
+  nodeBorder: string;
+  nodeCopy: string;
+  nodeSelected: string;
+  nodeShadow: string;
+  nodeShadowActive: string;
+  foreground: string;
 }
 
 const NODE_WIDTH = 248;
 const NODE_HEIGHT = 122;
+const NODE_COLUMN_GAP = 88;
+const NODE_CLEARANCE = 20;
+const VERTICAL_SPACING_SCALE = 1.08;
 const MIN_SCALE = 0.34;
 const MAX_SCALE = 1.8;
 const graph = readGraph();
+applySpaciousLayerLayout();
 const canvas = document.querySelector<HTMLCanvasElement>("#architecture-canvas");
 const context = canvas?.getContext("2d");
 const viewport: Viewport = { x: 0, y: 0, scale: 0.8 };
@@ -49,6 +68,9 @@ const nodeById = new Map(graph.nodes.map((node) => [node.id, node]));
 let selectedNode = graph.nodes.find((node) => node.id === "vibe-code") ?? graph.nodes[0];
 let drag: PointerDrag | null = null;
 let hostCanMessage = false;
+let canvasTheme = readCanvasTheme();
+let lastCanvasSize: { width: number; height: number } | null = null;
+const resizeObserver = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(resizeCanvas);
 
 const app = new App({ name: "Vibe Coding Assistant Architecture Canvas", version: "0.2.4" }, {});
 
@@ -57,10 +79,47 @@ function readGraph(): ArchitectureGraph {
   return JSON.parse(source) as ArchitectureGraph;
 }
 
+function applySpaciousLayerLayout(): void {
+  const columns = new Map<number, ArchitectureNode[]>();
+  for (const node of graph.nodes) {
+    const column = columns.get(node.x) ?? [];
+    column.push(node);
+    columns.set(node.x, column);
+  }
+  const layers = [...columns.entries()]
+    .sort(([leftX], [rightX]) => leftX - rightX)
+    .map(([, nodes]) => nodes);
+  layers.forEach((nodes, columnIndex) => {
+    nodes.sort((left, right) => left.y - right.y);
+    nodes.forEach((node) => {
+      node.x = 64 + columnIndex * (NODE_WIDTH + NODE_COLUMN_GAP);
+      node.y = 64 + node.y * VERTICAL_SPACING_SCALE;
+    });
+  });
+}
+
 function getElement<T extends HTMLElement>(selector: string): T {
   const element = document.querySelector<T>(selector);
   if (!element) throw new Error(`缺少画布元素：${selector}`);
   return element;
+}
+
+function readCanvasTheme(): CanvasTheme {
+  const styles = getComputedStyle(document.documentElement);
+  const read = (name: string) => styles.getPropertyValue(name).trim();
+  return {
+    accent: read("--accent"),
+    edge: read("--canvas-edge"),
+    edgeLabel: read("--canvas-edge-label"),
+    gridDot: read("--canvas-dot"),
+    node: read("--node-surface"),
+    nodeBorder: read("--node-border"),
+    nodeCopy: read("--node-copy"),
+    nodeSelected: read("--node-selected"),
+    nodeShadow: read("--node-shadow"),
+    nodeShadowActive: read("--node-shadow-active"),
+    foreground: read("--foreground")
+  };
 }
 
 function setStatus(message: string, tone: "normal" | "warning" | "error" = "normal"): void {
@@ -109,14 +168,28 @@ async function toggleDisplayMode(): Promise<void> {
   }
 }
 
+function updateDetailsToggle(): void {
+  const workspace = getElement<HTMLElement>("#canvas-workspace");
+  const button = getElement<HTMLButtonElement>("#toggle-details");
+  const collapsed = workspace.classList.contains("is-detail-hidden");
+  const expanded = !collapsed;
+  const action = expanded ? "收起详情侧栏" : "显示详情侧栏";
+  button.setAttribute("aria-expanded", String(expanded));
+  button.setAttribute("aria-label", action);
+  button.title = action;
+  getElement<HTMLSpanElement>("#detail-toggle-label").textContent = expanded ? "收起详情" : "显示详情";
+  getElement<HTMLSpanElement>("#details-toggle-icon").textContent = expanded ? "‹" : "›";
+}
+
+function toggleDetails(): void {
+  getElement<HTMLElement>("#canvas-workspace").classList.toggle("is-detail-hidden");
+  updateDetailsToggle();
+  requestAnimationFrame(resizeCanvas);
+}
+
 function kindLabel(kind: ArchitectureNode["kind"]): string {
   const labels = { surface: "交互界面", skill: "Codex Skill", "mcp-tool": "本地 MCP 工具", boundary: "模块边界" };
   return labels[kind];
-}
-
-function kindColor(kind: ArchitectureNode["kind"]): string {
-  const colors = { surface: "#c08a35", skill: "#6d5bd0", "mcp-tool": "#4b77b4", boundary: "#26837b" };
-  return colors[kind];
 }
 
 function fillNodeChoices(): void {
@@ -164,6 +237,11 @@ function canvasSize(): { width: number; height: number } {
 function resizeCanvas(): void {
   const ratio = Math.max(1, window.devicePixelRatio || 1);
   const { width, height } = canvasSize();
+  if (lastCanvasSize) {
+    viewport.x += (width - lastCanvasSize.width) / 2;
+    viewport.y += (height - lastCanvasSize.height) / 2;
+  }
+  lastCanvasSize = { width, height };
   canvas!.width = Math.floor(width * ratio);
   canvas!.height = Math.floor(height * ratio);
   context!.setTransform(ratio, 0, 0, ratio, 0, 0);
@@ -176,7 +254,7 @@ function drawGrid(width: number, height: number): void {
   const offsetX = ((viewport.x % spacing) + spacing) % spacing;
   const offsetY = ((viewport.y % spacing) + spacing) % spacing;
   ctx.save();
-  ctx.fillStyle = "#dedbe8";
+  ctx.fillStyle = canvasTheme.gridDot;
   for (let x = offsetX; x < width; x += spacing) {
     for (let y = offsetY; y < height; y += spacing) ctx.fillRect(x, y, 1.2, 1.2);
   }
@@ -205,19 +283,19 @@ function drawEdge(edge: ArchitectureEdge): void {
   ctx.beginPath();
   ctx.moveTo(startX, startY);
   ctx.bezierCurveTo(controlOneX, controlOneY, controlTwoX, controlTwoY, endX, endY);
-  ctx.strokeStyle = "#c4c0d2";
+  ctx.strokeStyle = canvasTheme.edge;
   ctx.lineWidth = 1.6;
   ctx.stroke();
   const angle = Math.atan2(endY - controlTwoY, endX - controlTwoX);
-  ctx.fillStyle = "#aaa5bb";
+  ctx.fillStyle = canvasTheme.edge;
   ctx.beginPath();
   ctx.moveTo(endX, endY);
   ctx.lineTo(endX - 9 * Math.cos(angle - 0.45), endY - 9 * Math.sin(angle - 0.45));
   ctx.lineTo(endX - 9 * Math.cos(angle + 0.45), endY - 9 * Math.sin(angle + 0.45));
   ctx.closePath();
   ctx.fill();
-  ctx.fillStyle = "#888497";
-  ctx.font = "10px Inter, system-ui, sans-serif";
+  ctx.fillStyle = canvasTheme.edgeLabel;
+  ctx.font = '400 11px -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif';
   ctx.textAlign = "center";
   ctx.fillText(edge.label, (startX + endX) / 2, (startY + endY) / 2 - 8);
 }
@@ -226,30 +304,30 @@ function drawNode(node: ArchitectureNode): void {
   const ctx = context!;
   const active = node.id === selectedNode?.id;
   ctx.save();
-  ctx.shadowColor = active ? "#6d5bd033" : "#28243a14";
+  ctx.shadowColor = active ? canvasTheme.nodeShadowActive : canvasTheme.nodeShadow;
   ctx.shadowBlur = active ? 17 : 10;
   ctx.shadowOffsetY = 4;
   ctx.beginPath();
   ctx.roundRect(node.x, node.y, NODE_WIDTH, NODE_HEIGHT, 13);
-  ctx.fillStyle = active ? "#fcfbff" : "#ffffff";
+  ctx.fillStyle = active ? canvasTheme.nodeSelected : canvasTheme.node;
   ctx.fill();
   ctx.shadowColor = "transparent";
   ctx.lineWidth = active ? 2 : 1;
-  ctx.strokeStyle = active ? kindColor(node.kind) : "#e7e5ed";
+  ctx.strokeStyle = active ? canvasTheme.accent : canvasTheme.nodeBorder;
   ctx.stroke();
-  ctx.fillStyle = kindColor(node.kind);
+  ctx.fillStyle = canvasTheme.accent;
   ctx.beginPath();
   ctx.roundRect(node.x + 13, node.y + 14, 4, 24, 2);
   ctx.fill();
   ctx.textAlign = "left";
-  ctx.fillStyle = "#282637";
-  ctx.font = "700 15px Inter, system-ui, sans-serif";
+  ctx.fillStyle = canvasTheme.foreground;
+  ctx.font = '600 15px -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif';
   ctx.fillText(node.title, node.x + 27, node.y + 31, NODE_WIDTH - 40);
-  ctx.fillStyle = "#777487";
-  ctx.font = "11px Inter, system-ui, sans-serif";
+  ctx.fillStyle = canvasTheme.nodeCopy;
+  ctx.font = '400 11px -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif';
   wrapText(node.summary, node.x + 16, node.y + 57, NODE_WIDTH - 30, 16, 2);
-  ctx.fillStyle = kindColor(node.kind);
-  ctx.font = "700 9px Inter, system-ui, sans-serif";
+  ctx.fillStyle = canvasTheme.accent;
+  ctx.font = '600 10px -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif';
   ctx.fillText(kindLabel(node.kind), node.x + 16, node.y + NODE_HEIGHT - 13);
   ctx.restore();
 }
@@ -321,34 +399,75 @@ function nodeAt(clientX: number, clientY: number): ArchitectureNode | undefined 
   );
 }
 
+function collidesWithNode(nodeId: string, x: number, y: number): boolean {
+  return graph.nodes.some((other) => other.id !== nodeId &&
+    x < other.x + NODE_WIDTH + NODE_CLEARANCE &&
+    x + NODE_WIDTH + NODE_CLEARANCE > other.x &&
+    y < other.y + NODE_HEIGHT + NODE_CLEARANCE &&
+    y + NODE_HEIGHT + NODE_CLEARANCE > other.y
+  );
+}
+
+function moveNode(node: ArchitectureNode, dx: number, dy: number): void {
+  const nextX = node.x + dx;
+  const nextY = node.y + dy;
+  if (!collidesWithNode(node.id, nextX, nextY)) {
+    node.x = nextX;
+    node.y = nextY;
+    return;
+  }
+  if (!collidesWithNode(node.id, nextX, node.y)) node.x = nextX;
+  if (!collidesWithNode(node.id, node.x, nextY)) node.y = nextY;
+}
+
 function onPointerDown(event: PointerEvent): void {
   if (event.button !== 0) return;
-  drag = { pointerId: event.pointerId, startX: event.clientX, startY: event.clientY, lastX: event.clientX, lastY: event.clientY, moved: false };
+  const node = nodeAt(event.clientX, event.clientY);
+  drag = {
+    pointerId: event.pointerId,
+    startX: event.clientX,
+    startY: event.clientY,
+    lastX: event.clientX,
+    lastY: event.clientY,
+    moved: false,
+    nodeId: node?.id ?? null
+  };
   canvas!.setPointerCapture(event.pointerId);
 }
 
 function onPointerMove(event: PointerEvent): void {
   if (!drag || drag.pointerId !== event.pointerId) {
-    canvas!.style.cursor = nodeAt(event.clientX, event.clientY) ? "pointer" : "grab";
     return;
   }
   const dx = event.clientX - drag.lastX;
   const dy = event.clientY - drag.lastY;
   drag.moved ||= Math.hypot(event.clientX - drag.startX, event.clientY - drag.startY) > 4;
-  viewport.x += dx;
-  viewport.y += dy;
+  if (drag.nodeId) {
+    const node = nodeById.get(drag.nodeId);
+    if (node) moveNode(node, dx / viewport.scale, dy / viewport.scale);
+    canvas!.classList.add("is-moving-node");
+  } else {
+    viewport.x += dx;
+    viewport.y += dy;
+    canvas!.classList.add("is-panning");
+  }
   drag.lastX = event.clientX;
   drag.lastY = event.clientY;
-  canvas!.classList.add("is-panning");
+  canvas!.style.cursor = "grabbing";
   draw();
 }
 
 function onPointerUp(event: PointerEvent): void {
   if (!drag || drag.pointerId !== event.pointerId) return;
   const wasClick = !drag.moved;
+  const draggedNode = drag.nodeId ? nodeById.get(drag.nodeId) : undefined;
   drag = null;
   canvas!.classList.remove("is-panning");
-  if (wasClick) {
+  canvas!.classList.remove("is-moving-node");
+  canvas!.style.cursor = "";
+  if (draggedNode) {
+    selectNode(draggedNode);
+  } else if (wasClick) {
     const node = nodeAt(event.clientX, event.clientY);
     if (node) selectNode(node);
   }
@@ -417,10 +536,16 @@ function bindControls(): void {
   getElement<HTMLButtonElement>("#zoom-in").addEventListener("click", () => zoomAt(1.18));
   getElement<HTMLButtonElement>("#zoom-out").addEventListener("click", () => zoomAt(0.84));
   getElement<HTMLButtonElement>("#fit-canvas").addEventListener("click", fitCanvas);
+  getElement<HTMLButtonElement>("#toggle-details").addEventListener("click", toggleDetails);
   getElement<HTMLButtonElement>("#toggle-display-mode").addEventListener("click", () => void toggleDisplayMode());
   getElement<HTMLButtonElement>("#submit-request").addEventListener("click", () => void submitRequest());
   getElement<HTMLButtonElement>("#copy-request").addEventListener("click", () => void copyRequest());
   window.addEventListener("resize", resizeCanvas);
+  resizeObserver?.observe(getElement<HTMLElement>(".canvas-wrap"));
+  window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => {
+    canvasTheme = readCanvasTheme();
+    draw();
+  });
 }
 
 app.onhostcontextchanged = updateDisplayModeButton;

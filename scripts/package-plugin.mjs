@@ -37,6 +37,7 @@ async function copyPluginFiles(stageRoot) {
     await cp(join(workspaceRoot, file), join(stageRoot, file));
   }
   await cp(join(workspaceRoot, "skills"), join(stageRoot, "skills"), { recursive: true });
+  await cp(join(workspaceRoot, "assets"), join(stageRoot, "assets"), { recursive: true });
   const stagedServer = join(stageRoot, "mcp-server");
   await mkdir(stagedServer, { recursive: true });
   await cp(join(serverRoot, "dist"), join(stagedServer, "dist"), { recursive: true });

@@ -7,6 +7,7 @@ import { failureResult, successResult } from "../shared/errors.js";
 import { MAX_ARCHITECTURE_GRAPH_BYTES } from "../shared/limits.js";
 const bundleUrl = new URL("../ui/architecture-canvas.js", import.meta.url);
 const templateUrl = new URL("../ui/architecture-canvas.html", import.meta.url);
+const iconUrl = new URL("../../../assets/icon.svg", import.meta.url);
 export function registerArchitectureTools(server) {
     registerArchitectureResource(server);
     registerArchitectureCanvasTool(server);
@@ -14,11 +15,12 @@ export function registerArchitectureTools(server) {
 function registerArchitectureResource(server) {
     registerAppResource(server, "插件架构画布", ARCHITECTURE_RESOURCE_URI, { description: "展示插件 Skills、MCP 工具及其工作流关系的可交互画布。" }, async () => {
         try {
-            const [template, bundle] = await Promise.all([
+            const [template, bundle, icon] = await Promise.all([
                 readFile(templateUrl, "utf8"),
-                readFile(bundleUrl, "utf8")
+                readFile(bundleUrl, "utf8"),
+                readFile(iconUrl, "utf8")
             ]);
-            const html = renderArchitectureResource(template, bundle, ARCHITECTURE_GRAPH);
+            const html = renderArchitectureResource(template, bundle, icon, ARCHITECTURE_GRAPH);
             return {
                 contents: [{
                         uri: ARCHITECTURE_RESOURCE_URI,
