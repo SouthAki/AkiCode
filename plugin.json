@@ -1,8 +1,8 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "vibe-coding-assistant",
-  "version": "0.2.5",
-  "description": "First-party coding skills, an interactive MCP Apps architecture canvas, and evidence-based capability evolution.",
+  "version": "0.2.6",
+  "description": "First-party coding skills, interactive MCP Apps for Git and requirements, and evidence-based capability evolution.",
   "extensions": {
     "com.openai": {
       "interface": {

@@ -4,7 +4,7 @@ import { failureResult, successResult } from "../shared/errors.js";
 export function registerPlanningTools(server) {
     server.registerTool("vibe_create_openspec_plan", {
         title: "创建规划文件",
-        description: "将已审阅的提案、设计、任务和规格写入 openspec/changes/<change-id>；遇到同名目录会拒绝覆盖。",
+        description: "将已审阅的提案、设计、任务和规格写入 openspec/changes/<change-id>，并默认在 Git 私有 exclude 中忽略该计划；遇到同名目录会拒绝覆盖。",
         inputSchema: {
             repoPath: z.string().min(1),
             changeId: z.string().min(1),
@@ -17,6 +17,7 @@ export function registerPlanningTools(server) {
             repository: z.string(),
             changeId: z.string(),
             changeDirectory: z.string(),
+            gitExcluded: z.boolean(),
             files: z.array(z.string())
         }),
         annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false }

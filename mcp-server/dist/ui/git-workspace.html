@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light dark" />
+    <title>Git 工作区</title>
+    <style>
+      :root { color-scheme: light; font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; color: #272535; background: #faf9fc; }
+      * { box-sizing: border-box; }
+      body { width: 100%; min-height: 100vh; margin: 0; background: #faf9fc; }
+      button, input, textarea { font: inherit; }
+      .shell { display: flex; flex-direction: column; max-width: 1400px; min-height: 100vh; margin: 0 auto; padding: 18px; }
+      header { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 3px 2px 14px; }
+      h1 { margin: 0; font-size: 20px; letter-spacing: -.03em; }
+      .subtitle { margin: 5px 0 0; color: #777487; font-size: 11px; }
+      .branch { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; color: #625e70; font-size: 11px; }
+      .pill { padding: 5px 9px; border: 1px solid #e3e0e9; border-radius: 20px; background: #fff; }
+      .button { min-height: 35px; padding: 0 11px; border: 1px solid #e3e0e9; border-radius: 9px; color: inherit; background: #fff; cursor: pointer; font-size: 11px; font-weight: 700; }
+      .button:hover { background: #f5f3fa; }
+      .button:disabled { color: #aaa6b5; background: #f0eff3; cursor: not-allowed; }
+      .primary { color: #fff; border-color: #6d5bd0; background: #6d5bd0; }
+      .primary:hover { background: #5846bd; }
+      .workspace { display: grid; grid-template-columns: minmax(280px, 38%) minmax(0, 1fr); flex: 1; min-height: 420px; border: 1px solid #e7e4ed; border-radius: 14px; overflow: hidden; background: #fff; }
+      .files-panel { display: flex; flex-direction: column; min-height: 0; border-right: 1px solid #e7e4ed; }
+      .panel-heading { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 12px 13px; border-bottom: 1px solid #eeecf1; }
+      .panel-heading h2 { margin: 0; font-size: 12px; }
+      #file-count { color: #777487; font-size: 10px; }
+      #file-list { flex: 1; min-height: 0; padding: 7px; margin: 0; overflow: auto; list-style: none; }
+      .file-row { display: grid; grid-template-columns: 20px minmax(0, 1fr) auto; align-items: start; gap: 7px; padding: 9px 7px; border-radius: 9px; }
+      .file-row:hover, .file-row[data-selected="true"] { background: #f5f3fb; }
+      .file-row input { margin: 3px 0 0; accent-color: #6d5bd0; }
+      .file-name { min-width: 0; padding: 0; border: 0; color: #343143; background: transparent; text-align: left; cursor: pointer; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 10px; line-height: 1.45; overflow-wrap: anywhere; }
+      .file-status { color: #817d8c; font-size: 9px; white-space: nowrap; }
+      .diff-panel { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
+      .diff-heading { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 12px 14px; border-bottom: 1px solid #eeecf1; }
+      .diff-heading h2 { min-width: 0; margin: 0; font-size: 12px; overflow-wrap: anywhere; }
+      #diff-output { flex: 1; min-height: 0; padding: 13px; margin: 0; overflow: auto; color: #343143; background: #fbfafc; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 10px; line-height: 1.55; white-space: pre; }
+      .actions { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; padding: 11px 12px; border-top: 1px solid #e7e4ed; background: #fff; }
+      .actions .spacer { flex: 1; }
+      #status { flex: 1 0 100%; min-height: 16px; margin: 0; color: #26837b; font-size: 10px; }
+      #status[data-tone="warning"] { color: #9c6d24; }
+      #status[data-tone="error"] { color: #b64b4b; }
+      .commit-panel { padding: 12px; border-top: 1px solid #e7e4ed; background: #f7f5fc; }
+      .commit-panel[hidden] { display: none; }
+      .commit-panel h2 { margin: 0; font-size: 12px; }
+      .commit-summary { margin: 5px 0 8px; color: #777487; font-size: 10px; line-height: 1.5; white-space: pre-line; }
+      #commit-message { width: 100%; min-height: 55px; padding: 9px; border: 1px solid #dfdce6; border-radius: 9px; resize: vertical; background: #fff; }
+      .commit-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 8px; }
+      footer { display: flex; justify-content: space-between; gap: 12px; padding: 10px 3px 0; color: #817d8c; font-size: 10px; }
+      @media (max-width: 700px) { .shell { padding: 10px; } header { align-items: flex-start; } .branch { justify-content: flex-end; } .workspace { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(190px, 42%) minmax(250px, 1fr); } .files-panel { border-right: 0; border-bottom: 1px solid #e7e4ed; } footer { display: block; } }
+      @media (prefers-color-scheme: dark) {
+        :root { color-scheme: dark; color: #f0eef7; background: #211f2a; }
+        body { background: #211f2a; }
+        .pill, .button, .workspace, .files-panel, .diff-heading, .panel-heading, .actions { color: #f0eef7; border-color: #403d4b; background: #292733; }
+        .workspace { border-color: #403d4b; }
+        .file-name, #diff-output { color: #e9e6f1; }
+        #diff-output { background: #24222d; }
+        .file-row:hover, .file-row[data-selected="true"] { background: #373443; }
+        .commit-panel { border-color: #403d4b; background: #302d3b; }
+        #commit-message { color: #f0eef7; border-color: #484552; background: #24222d; }
+        .button:hover { background: #3a3748; }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="shell">
+      <header>
+        <div><h1>Git 工作区</h1><p class="subtitle">检查改动、选择暂存范围，并在本地创建提交。这里不会推送。</p></div>
+        <div class="branch"><span class="pill" id="branch-name">读取分支…</span><span id="ahead-behind"></span><button class="button" id="refresh" type="button">刷新</button></div>
+      </header>
+      <section class="workspace">
+        <section class="files-panel" aria-label="变更文件">
+          <div class="panel-heading"><h2>变更文件</h2><span id="file-count">载入中</span></div>
+          <ul id="file-list"></ul>
+        </section>
+        <section class="diff-panel" aria-label="Diff 预览">
+          <div class="diff-heading"><h2 id="diff-title">选择文件查看 Diff</h2></div>
+          <pre id="diff-output">等待 Git 状态…</pre>
+        </section>
+      </section>
+      <section class="actions">
+        <button class="button" id="stage-selected" type="button" disabled>暂存所选</button>
+        <button class="button" id="unstage-selected" type="button" disabled>撤销暂存</button>
+        <span class="spacer"></span>
+        <button class="button primary" id="review-commit" type="button" disabled>检查并提交…</button>
+        <p id="status" role="status" aria-live="polite"></p>
+      </section>
+      <section class="commit-panel" id="commit-panel" hidden>
+        <h2>确认本地提交</h2>
+        <p class="commit-summary" id="commit-summary"></p>
+        <textarea id="commit-message" maxlength="1000" placeholder="输入提交说明"></textarea>
+        <div class="commit-actions">
+          <button class="button" id="cancel-commit" type="button">返回</button>
+          <button class="button primary" id="confirm-commit" type="button" disabled>确认提交</button>
+        </div>
+      </section>
+      <footer><span id="repository-path"></span><span>提交前会复核暂存区是否变化 · 不执行 push</span></footer>
+    </main>
+    <script type="module" src="./git-workspace.js"></script>
+  </body>
+</html>

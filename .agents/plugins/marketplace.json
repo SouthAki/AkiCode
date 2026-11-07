@@ -8,7 +8,7 @@
       "name": "vibe-coding-assistant",
       "source": {
         "source": "local",
-        "path": "./artifacts/vibe-coding-assistant-0.2.5"
+        "path": "./artifacts/vibe-coding-assistant-0.2.6"
       },
       "policy": {
         "installation": "AVAILABLE",

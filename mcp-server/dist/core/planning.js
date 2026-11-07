@@ -3,6 +3,7 @@ import { lstat, mkdir, rename, rm, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { rejectSymlinkSegments, resolveInsideRoot, resolveRepositoryRoot } from "../shared/paths.js";
 import { MAX_PLAN_BYTES } from "../shared/limits.js";
+import { addLocalGitExclude } from "./local-state.js";
 function validatePlan(input) {
     if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(input.changeId) || input.changeId.length > 64) {
         throw new Error("changeId 必须是最多 64 字符的 kebab-case ID");
@@ -58,6 +59,7 @@ export async function createPlan(input) {
     const changesDirectory = resolveInsideRoot(root, "openspec/changes");
     await rejectSymlinkSegments(root, target);
     await ensureDoesNotExist(target);
+    const gitExcluded = await addLocalGitExclude(root, `/${changeRelative}/`);
     await mkdir(changesDirectory, { recursive: true });
     await rejectSymlinkSegments(root, target);
     const temporary = resolve(changesDirectory, `.${input.changeId}.${randomUUID()}.tmp`);
@@ -79,6 +81,7 @@ export async function createPlan(input) {
         repository: root,
         changeId: input.changeId,
         changeDirectory: changeRelative,
+        gitExcluded,
         files: planFiles(input).map(([filePath]) => `${changeRelative}/${filePath}`)
     };
 }

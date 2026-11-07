@@ -1,6 +1,6 @@
 # AkiCode
 
-一个面向 Codex 的 Vibe Coding 插件，提供仓库理解、需求规划、Diff Review 和基于证据的自我迭代能力，并通过 MCP Apps 架构画布展示内部模块关系。上游项目只作为设计参考；本插件运行时不依赖它们的 CLI、插件或源码。
+一个面向 Codex 的 Vibe Coding 插件，提供仓库理解、需求澄清、参考功能分析、Git 工作区和基于证据的自我迭代能力，并通过 MCP Apps 在 Codex 宿主内展示与操作。上游项目只作为设计参考；本插件运行时不依赖它们的 CLI、插件或源码。
 
 ## Agent 开始前必读
 
@@ -21,15 +21,18 @@
 │   ├── vibe-understand/         # 仓库结构、入口、依赖与调用链理解
 │   ├── vibe-plan/               # 生成 OpenSpec 兼容的规划产物
 │   ├── vibe-review/             # 对指定 Git Diff 做逐项代码审查
+│   ├── vibe-requirements/       # 结构化需求问询与用户决策
+│   ├── vibe-reference/          # 基于证据分析参考软件功能
+│   ├── vibe-git/                # 调用可视化 Git 工作区
 │   ├── vibe-architecture/       # 浏览插件架构并从画布提出调整
 │   └── vibe-evolve/             # 基于证据诊断并迭代插件能力
 ├── mcp-server/                  # 第一方本地工具：文件、Git 和计划产物操作
 │   ├── src/
-│   │   ├── core/                # 仓库、Git、规划领域逻辑
+│   │   ├── core/                # 仓库、Git、规划、私有状态领域逻辑
 │   │   ├── shared/              # 路径安全、上限和进程封装
 │   │   ├── tools/               # MCP 工具注册
-│   │   └── ui/                  # 架构画布交互逻辑
-│   ├── ui/                      # MCP Apps HTML 模板
+│   │   └── ui/                  # MCP Apps 交互逻辑
+│   ├── ui/                      # 架构、需求决策和 Git 工作区 HTML 模板
 │   ├── package.json
 │   ├── pnpm-lock.yaml
 │   ├── tsconfig.json
@@ -37,6 +40,8 @@
 │   ├── dist/                    # 编译后的本地 server，随插件提供
 ├── scripts/
 │   └── package-plugin.mjs        # 生成带生产依赖的自包含插件目录
+├── .vibe/                       # 本地迭代记录，不提交
+├── openspec/changes/            # 本地生成的规划产物，不提交
 ├── hooks/                       # 预留的可选生命周期 hooks
 ├── assets/                      # 插件级静态资源
 └── docs/
@@ -46,23 +51,28 @@
 ### 能力边界
 
 - **`vibe-understand`**：通过本地 MCP 工具枚举模块、搜索文本和读取带行号的源码，再由 Skill 追踪调用关系、形成有证据的项目地图。默认只读，不创建索引文件。
-- **`vibe-plan`**：把需求转为提案、需求场景、设计决策和任务清单；经 MCP 工具原子写入 OpenSpec 兼容目录。目标目录已存在时拒绝覆盖。
+- **`vibe-plan`**：把需求转为提案、需求场景、设计决策和任务清单；经 MCP 工具原子写入 OpenSpec 兼容目录，并在 Git 私有 exclude 中忽略新生成的计划。目标目录已存在时拒绝覆盖。
 - **`vibe-review`**：先列出确切变更文件，再逐文件读取 staged、unstaged、untracked 或分支 Diff；Codex 模型负责核验问题与严重程度，工具只提供本地 Git 证据。
-- **`vibe-code`**：编排仓库理解、规划、实现和审查；遇到架构浏览或自我迭代需求时交给对应独立 Skill。
+- **`vibe-code`**：开始时读取本地迭代摘要，核对其与当前代码是否一致；编排仓库理解、规划、实现和审查，并在完成核对后追加一条本地摘要。
+- **`vibe-requirements`**：识别会改变实现方向的未决事项，通过需求 MCP App 收集用户选择；需求界面只把答案发回对话，不写源码。
+- **`vibe-reference`**：从当前会话可访问的参考应用、网站、源码、截图或文档中分析指定功能，给出可追溯的行为模型并标注未知；不复制参考实现。
+- **`vibe-git`**：打开 Git 工作区 MCP App，让用户查看分支、状态和 Diff，选择暂存/撤销暂存，并二次确认本地提交；不 push、不丢弃文件或重写历史。
 - **`vibe-architecture`**：打开插件架构 MCP App，让用户浏览模块关系、选择能力并提交调整意图。
 - **`vibe-evolve`**：从当前对话与仓库证据定位插件能力缺口，区分事实、推断和未知，提出可验证改进，并按用户授权组合规划、实现和审查。
-- **`mcp-server/`**：第一方本地 stdio MCP 服务。确定性的文件枚举、搜索、Diff 获取和计划落盘由工具处理；语义理解、需求建模和 Review 判断仍由 Skills 指导模型完成。
-- **架构画布 MCP App**：只读展示插件声明的 Skills、工具和关系；用户可选择能力并把调整意图发送到当前对话。代码修改仍由 `$vibe-code` 执行。宿主不支持 MCP Apps 时，工具保留结构化架构结果。
+- **`mcp-server/`**：第一方本地 stdio MCP 服务。工具处理确定性的文件/Git 证据、私有计划与迭代状态；语义理解、需求建模、参考功能推理和 Review 判断仍由 Skills 指导模型完成。
+- **架构画布 MCP App**：只读展示插件声明的 Skills、工具和关系；用户可选择能力并把调整意图发送到当前对话。
+- **需求决策 MCP App**：以 Codex 宿主内 iframe 表单展示用户要决定的问题。提交后经 MCP Apps 消息桥回传；若宿主不支持消息，则保留复制回退。
+- **Git 工作区 MCP App**：展示本地 Git 状态和 Diff，用户可以对当前变更清单中的路径暂存、撤销暂存，并在检查文件清单和提交说明后确认本地 commit。提交前校验暂存区未变化。不会 push。
 
-每项能力均可独立调用：`$vibe-understand`、`$vibe-plan`、`$vibe-review`、`$vibe-architecture`、`$vibe-evolve`；端到端流程使用 `$vibe-code`。Skills 通过 `vibe-coding-local` MCP server 调用第一方工具；架构画布通过 `vibe_open_architecture_canvas` 展示。
+每项能力均可独立调用：`$vibe-understand`、`$vibe-plan`、`$vibe-review`、`$vibe-requirements`、`$vibe-reference`、`$vibe-git`、`$vibe-architecture`、`$vibe-evolve`；端到端流程使用 `$vibe-code`。Skills 通过 `vibe-coding-local` MCP server 调用第一方工具；三个 MCP Apps 分别由 `vibe_open_architecture_canvas`、`vibe_open_requirements_canvas` 和 `vibe_open_git_workspace` 打开。
 
 ## 本地服务
 
-插件的 MCP server 只在本机读取明确传入的仓库路径，不访问网络。读取工具拒绝符号链接、非文本文件和超限文件；规划工具只在新建目录下写入 `openspec/changes/<change-id>/`，拒绝覆盖已有规划。`vibe_open_architecture_canvas` 不接收仓库路径、不读写用户源码，返回固定且有界的插件架构数据。
+插件的 MCP server 只在本机访问明确传入的仓库路径，不访问网络。读取工具拒绝符号链接、非文本文件和超限文件。规划工具只在新建目录下写入 `openspec/changes/<change-id>/`，拒绝覆盖，并将精确目录规则追加到 Git 的 `.git/info/exclude`，不改共享 `.gitignore`。迭代记录追加到 `.vibe/iterations/` 并用同一方式本地忽略；读取只返回最新有限数量的摘要。Git 状态、Diff 和文件操作都限定在目标仓库，提交动作由用户通过界面确认。架构画布不接收仓库路径，返回固定且有界的插件架构数据。
 
-架构画布使用 MCP Apps 标准的 `ui://` 资源与消息桥接。交互请求只会在用户点击发送后作为跟进消息回到对话；如果宿主没有消息能力，界面保留请求并提供复制方式。界面不加载外部资源或调用网络服务。
+三个界面使用 MCP Apps 标准的 `ui://` 资源与宿主 iframe。需求和架构请求只会在用户点击发送后作为跟进消息回到对话；如果宿主没有消息能力，界面提供复制方式。界面不加载外部资源或调用网络服务。Git 工作区对暂存与提交调用本地 MCP 工具，提交前要求二次确认且核对暂存区指纹。
 
-本地 stdio MCP 需要 Codex 桌面端的本机执行环境。首次开发或改动服务依赖后，在 `mcp-server/` 中运行 `pnpm install` 和 `pnpm run build`，生成随插件加载的 `dist/index.js` 及画布资源。发布或本地安装时可运行 `pnpm --dir mcp-server run package`，生成版本化的自包含插件目录。
+本地 stdio MCP 需要 Codex 桌面端的本机执行环境。首次开发或改动服务依赖后，在 `mcp-server/` 中运行 `pnpm install` 和 `pnpm run build`，生成随插件加载的 `dist/index.js` 及三个 App 资源。发布或本地安装时可运行 `pnpm --dir mcp-server run package`，生成版本化的自包含插件目录。
 
 ### 本地 Debug 安装
 
@@ -89,14 +99,18 @@ pnpm run package
 
 ## 规划产物
 
-新变更放在目标项目的 `openspec/changes/<change-id>/` 下，通常包括：
+新变更仍使用 OpenSpec 兼容的 `openspec/changes/<change-id>/` 布局，但默认属于本地规划资料，不进入常规 Git status：工具会把本次新目录加入目标仓库的 `.git/info/exclude`，不改共享 `.gitignore`。本仓库根级 `.gitignore` 也忽略自身 `openspec/changes/` 和 `.vibe/`；已有本地规划文件仍留在磁盘。确实要分享规划时，用户可以通过 Git 显式添加。非 Git 目录无法获得 Git 忽略保证，工具会在结果中报告 `gitExcluded: false`。
+
+工作摘要放在 `.vibe/iterations/`。`$vibe-code` 在新任务开始时读取最新摘要，核对当前代码后再使用；完成复核时只追加简短结果、实际文件、真实验证和后续事项，不保存原始对话或凭据。它是跨会话线索，不代替当前源码与 Git 证据。
+
+每份规划通常包括：
 
 - `proposal.md`：背景、目标、范围和非目标。
 - `specs/<capability>/spec.md`：新增或变更的需求及可验证场景。
 - `design.md`：关键技术选择、边界和风险。
 - `tasks.md`：按依赖排序的可执行清单。
 
-保持 OpenSpec 常见的变更目录和需求增量格式，方便团队后续直接使用 OpenSpec 工具；不要复制 OpenSpec 的实现代码。规划请求只创建规划产物，不修改应用源码。
+保持 OpenSpec 常见的变更目录和需求增量格式，方便团队后续显式共享或接入 OpenSpec 工具；不要复制 OpenSpec 的实现代码。规划请求只创建规划产物，不修改应用源码。
 
 ## 可维护性约束
 
@@ -107,4 +121,4 @@ pnpm run package
 
 ## 设计参考
 
-查看 [设计参考与边界](docs/design-reference.md)，了解 Understand Anything、OpenSpec、Open Code Review 分别启发了哪些能力，以及本插件为何保持第一方实现。
+查看 [设计参考与边界](docs/design-reference.md)，了解 Understand Anything、OpenSpec、Open Code Review、MCP Apps、Superpowers 和 REA 启发了哪些能力，以及本插件为何保持第一方实现。

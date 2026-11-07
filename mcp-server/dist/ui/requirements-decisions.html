@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light dark" />
+    <title>需求决策</title>
+    <style>
+      :root { color-scheme: light; font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; color: #272535; background: #faf9fc; }
+      * { box-sizing: border-box; }
+      body { margin: 0; min-height: 100vh; background: #faf9fc; }
+      button, textarea { font: inherit; }
+      .shell { max-width: 880px; margin: 0 auto; padding: 22px; }
+      header { display: flex; align-items: flex-start; justify-content: space-between; gap: 18px; margin-bottom: 18px; }
+      h1 { margin: 0; font-size: 21px; letter-spacing: -.03em; }
+      .subtitle, .context, .helper { color: #777487; font-size: 12px; line-height: 1.55; }
+      .context { padding: 13px 15px; border: 1px solid #e9e6f0; border-radius: 12px; background: #fff; white-space: pre-wrap; }
+      .questions { display: grid; gap: 12px; margin-top: 14px; }
+      .question { padding: 16px; border: 1px solid #e8e5ed; border-radius: 14px; background: #fff; box-shadow: 0 5px 18px #332b4a08; }
+      .question h2 { margin: 0; font-size: 15px; line-height: 1.4; }
+      .question p { margin: 6px 0 11px; color: #777487; font-size: 11px; line-height: 1.5; }
+      .choices { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 7px; }
+      .choice { display: flex; align-items: flex-start; gap: 8px; padding: 10px; border: 1px solid #e9e6ee; border-radius: 10px; cursor: pointer; font-size: 12px; line-height: 1.45; }
+      .choice:has(input:checked) { border-color: #9b8ee5; background: #f5f3ff; }
+      .choice input { margin: 2px 0 0; accent-color: #6d5bd0; }
+      .choice strong { display: block; }
+      .badge { margin-left: 5px; color: #6957c6; font-size: 10px; font-weight: 700; }
+      .other-answer { display: none; width: 100%; min-height: 58px; margin-top: 7px; padding: 9px; border: 1px solid #dedbe7; border-radius: 9px; resize: vertical; }
+      .other-answer.is-visible { display: block; }
+      label[for="extra-context"] { display: block; margin: 16px 0 7px; font-size: 12px; font-weight: 700; }
+      #extra-context { width: 100%; min-height: 75px; padding: 10px; border: 1px solid #e4e1ea; border-radius: 10px; resize: vertical; background: #fff; }
+      .actions { display: flex; align-items: center; justify-content: flex-end; gap: 8px; margin-top: 12px; }
+      .button { min-height: 38px; padding: 0 14px; border: 1px solid #e3e0e9; border-radius: 10px; background: #fff; cursor: pointer; font-size: 12px; font-weight: 700; }
+      .primary { color: #fff; border-color: #6d5bd0; background: #6d5bd0; }
+      .primary:disabled { color: #aaa6b5; border-color: #ebe9ef; background: #f0eff3; cursor: not-allowed; }
+      #status { min-height: 22px; margin: 8px 0 0; color: #26837b; font-size: 11px; }
+      #status[data-tone="warning"] { color: #9c6d24; }
+      #status[data-tone="error"] { color: #b64b4b; }
+      .connection { color: #8a8795; font-size: 10px; white-space: nowrap; }
+      @media (max-width: 580px) { .shell { padding: 14px; } header { display: block; } .connection { display: block; margin-top: 7px; } .choices { grid-template-columns: 1fr; } }
+      @media (prefers-color-scheme: dark) {
+        :root { color-scheme: dark; color: #f0eef7; background: #211f2a; }
+        body { background: #211f2a; }
+        .context, .question, .choice, #extra-context, .button { color: #f0eef7; border-color: #403d4b; background: #292733; }
+        .choice:has(input:checked) { border-color: #8778dc; background: #37314f; }
+        .subtitle, .context, .helper, .question p, .connection { color: #aaa6b5; }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="shell">
+      <header>
+        <div><h1>需求决策</h1><p class="subtitle">选择你希望的行为；未决定的问题可以留给 Codex 继续追问。</p></div>
+        <span class="connection" id="connection-state">连接中…</span>
+      </header>
+      <section class="context" id="request-context">等待问题内容…</section>
+      <section class="questions" id="questions" aria-live="polite"></section>
+      <label for="extra-context">补充约束或背景</label>
+      <textarea id="extra-context" maxlength="2000" placeholder="例如：先交付最小版本，保留现有接口。"></textarea>
+      <div class="actions">
+        <button class="button" id="copy-answers" type="button">复制决策摘要</button>
+        <button class="button primary" id="submit-answers" type="button" disabled>发送到对话</button>
+      </div>
+      <p id="status" role="status" aria-live="polite"></p>
+    </main>
+    <script type="module" src="./requirements-decisions.js"></script>
+  </body>
+</html>

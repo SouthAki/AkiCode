@@ -3,6 +3,7 @@ import { lstat, mkdir, rename, rm, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { rejectSymlinkSegments, resolveInsideRoot, resolveRepositoryRoot } from "../shared/paths.js";
 import { MAX_PLAN_BYTES } from "../shared/limits.js";
+import { addLocalGitExclude } from "./local-state.js";
 
 export type PlanSpec = { capability: string; content: string };
 export type PlanInput = {
@@ -67,6 +68,7 @@ export async function createPlan(input: PlanInput) {
   const changesDirectory = resolveInsideRoot(root, "openspec/changes");
   await rejectSymlinkSegments(root, target);
   await ensureDoesNotExist(target);
+  const gitExcluded = await addLocalGitExclude(root, `/${changeRelative}/`);
   await mkdir(changesDirectory, { recursive: true });
   await rejectSymlinkSegments(root, target);
 
@@ -89,6 +91,7 @@ export async function createPlan(input: PlanInput) {
     repository: root,
     changeId: input.changeId,
     changeDirectory: changeRelative,
+    gitExcluded,
     files: planFiles(input).map(([filePath]) => `${changeRelative}/${filePath}`)
   };
 }

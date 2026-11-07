@@ -2,7 +2,7 @@ import { lstat, readFile } from "node:fs/promises";
 import { resolveRepositoryRoot, rejectSymlinkSegments, resolveInsideRoot } from "../shared/paths.js";
 import { MAX_DIFF_BYTES, MAX_FILE_BYTES } from "../shared/limits.js";
 import { parseNullSeparatedPaths, runGit } from "../shared/process.js";
-async function gitRoot(repoPath) {
+export async function resolveGitRepositoryRoot(repoPath) {
     const requestedRoot = await resolveRepositoryRoot(repoPath);
     const root = (await runGit(requestedRoot, ["rev-parse", "--show-toplevel"])).trim();
     return resolveRepositoryRoot(root);
@@ -31,7 +31,7 @@ async function collectWorkingTreeFiles(root) {
     return files;
 }
 export async function listChangedFiles(repoPath, scope, base, head) {
-    const root = await gitRoot(repoPath);
+    const root = await resolveGitRepositoryRoot(repoPath);
     if (scope === "working-tree") {
         const changes = await collectWorkingTreeFiles(root);
         return {

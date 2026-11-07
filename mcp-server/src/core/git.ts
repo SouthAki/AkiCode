@@ -5,7 +5,7 @@ import { parseNullSeparatedPaths, runGit } from "../shared/process.js";
 
 export type DiffScope = "working-tree" | "branch-range";
 
-async function gitRoot(repoPath: string): Promise<string> {
+export async function resolveGitRepositoryRoot(repoPath: string): Promise<string> {
   const requestedRoot = await resolveRepositoryRoot(repoPath);
   const root = (await runGit(requestedRoot, ["rev-parse", "--show-toplevel"])).trim();
   return resolveRepositoryRoot(root);
@@ -42,7 +42,7 @@ export async function listChangedFiles(
   base?: string,
   head?: string
 ) {
-  const root = await gitRoot(repoPath);
+  const root = await resolveGitRepositoryRoot(repoPath);
   if (scope === "working-tree") {
     const changes = await collectWorkingTreeFiles(root);
     return {
