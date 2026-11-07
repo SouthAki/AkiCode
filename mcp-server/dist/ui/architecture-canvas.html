@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light dark" />
+    <title>Vibe Coding Assistant · 架构画布</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --ink: #242231;
+        --muted: #777487;
+        --line: #e8e6ed;
+        --paper: #fbfafc;
+        --panel: #ffffff;
+        --purple: #6d5bd0;
+        --purple-soft: #f0edff;
+        --gold: #c08a35;
+        --teal: #26837b;
+        --blue: #4b77b4;
+        font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      }
+      * { box-sizing: border-box; }
+      html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; }
+      body { color: var(--ink); background: var(--paper); }
+      button, textarea { font: inherit; }
+      button { color: inherit; }
+      .shell { display: flex; flex-direction: column; width: 100%; height: 100%; min-height: 520px; }
+      .topbar {
+        display: flex; align-items: center; justify-content: space-between; gap: 18px;
+        min-height: 68px; padding: 12px 20px; background: var(--panel); border-bottom: 1px solid var(--line);
+      }
+      .brand { display: flex; align-items: center; gap: 12px; min-width: 0; }
+      .brand-mark {
+        display: grid; place-items: center; flex: 0 0 36px; width: 36px; height: 36px;
+        color: #fff; background: linear-gradient(145deg, #8879e6, #6351be); border-radius: 12px;
+        box-shadow: 0 5px 12px #6d5bd033; font-size: 17px; font-weight: 750;
+      }
+      .brand-title { margin: 0; font-size: 15px; font-weight: 720; letter-spacing: -.02em; }
+      .brand-subtitle { margin: 3px 0 0; color: var(--muted); font-size: 11px; }
+      .toolbar { display: flex; align-items: center; gap: 8px; }
+      .tool-button {
+        min-width: 35px; height: 35px; padding: 0 11px; border: 1px solid var(--line); border-radius: 10px;
+        background: var(--panel); cursor: pointer; transition: background .15s, border-color .15s;
+      }
+      .tool-button:hover { border-color: #c8c3dc; background: #f7f5ff; }
+      .tool-button:focus-visible, .node-choice:focus-visible, textarea:focus-visible, .action:focus-visible {
+        outline: 3px solid #9e91ef66; outline-offset: 2px;
+      }
+      .zoom-label { min-width: 48px; color: var(--muted); text-align: center; font-size: 11px; font-variant-numeric: tabular-nums; }
+      .workspace { display: grid; grid-template-columns: minmax(0, 1fr) 330px; flex: 1; min-height: 0; }
+      .canvas-wrap { position: relative; min-width: 0; min-height: 0; background-color: #f7f6fa; }
+      #architecture-canvas { display: block; width: 100%; height: 100%; cursor: grab; touch-action: none; }
+      #architecture-canvas.is-panning { cursor: grabbing; }
+      .canvas-tip {
+        position: absolute; left: 16px; bottom: 14px; padding: 8px 11px; border: 1px solid #e8e6edcc;
+        border-radius: 9px; color: #777487; background: #ffffffde; box-shadow: 0 4px 16px #29243a0b;
+        font-size: 11px; pointer-events: none;
+      }
+      .detail {
+        display: flex; flex-direction: column; min-height: 0; padding: 22px 19px 16px;
+        background: var(--panel); border-left: 1px solid var(--line); overflow: auto;
+      }
+      .eyebrow { color: var(--muted); font-size: 10px; font-weight: 700; letter-spacing: .11em; text-transform: uppercase; }
+      .kind-pill {
+        align-self: flex-start; margin-top: 13px; padding: 5px 9px; border-radius: 20px;
+        color: var(--purple); background: var(--purple-soft); font-size: 10px; font-weight: 720;
+      }
+      .kind-pill[data-kind="mcp-tool"] { color: var(--blue); background: #eaf1fb; }
+      .kind-pill[data-kind="surface"] { color: var(--gold); background: #fbf2e3; }
+      .kind-pill[data-kind="boundary"] { color: var(--teal); background: #e7f5f2; }
+      .detail h2 { margin: 11px 0 7px; font-size: 20px; line-height: 1.2; letter-spacing: -.03em; }
+      .summary { min-height: 48px; margin: 0; color: var(--muted); font-size: 12px; line-height: 1.55; }
+      .path-title { margin: 18px 0 8px; color: #545164; font-size: 11px; font-weight: 700; }
+      .paths { display: flex; flex-wrap: wrap; gap: 6px; padding: 0; margin: 0; list-style: none; }
+      .paths li {
+        max-width: 100%; padding: 5px 7px; border: 1px solid #eceaf0; border-radius: 7px;
+        color: #666273; background: #faf9fc; font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+        font-size: 9px; overflow-wrap: anywhere;
+      }
+      .divider { height: 1px; margin: 19px 0 16px; background: var(--line); }
+      .prompt-label { margin-bottom: 8px; font-size: 12px; font-weight: 700; }
+      .prompt-hint { margin: 0 0 10px; color: var(--muted); font-size: 10px; line-height: 1.45; }
+      #change-request {
+        width: 100%; min-height: 112px; padding: 10px 11px; resize: vertical; border: 1px solid #e4e1ea;
+        border-radius: 10px; color: var(--ink); background: #fdfcfe; font-size: 12px; line-height: 1.5;
+      }
+      #change-request::placeholder { color: #aaa7b5; }
+      .actions { display: flex; gap: 8px; margin-top: 10px; }
+      .action { min-height: 37px; padding: 0 12px; border: 1px solid var(--line); border-radius: 9px; cursor: pointer; font-size: 11px; font-weight: 700; }
+      .action-primary { flex: 1; color: white; border-color: #6d5bd0; background: #6d5bd0; }
+      .action-primary:hover { background: #5846bd; }
+      .action-primary:disabled { color: #a6a2b2; border-color: #e7e5eb; background: #f0eff3; cursor: not-allowed; }
+      .action-secondary { color: #625e70; background: #fff; }
+      .action-secondary:hover { background: #f7f6fa; }
+      #request-status { min-height: 30px; margin: 9px 0 0; color: var(--teal); font-size: 10px; line-height: 1.45; }
+      #request-status[data-tone="warning"] { color: #9c6d24; }
+      #request-status[data-tone="error"] { color: #b64b4b; }
+      .capability-section { margin-top: auto; padding-top: 10px; }
+      .capability-heading { margin: 0 0 8px; color: var(--muted); font-size: 10px; font-weight: 700; }
+      .capability-list { display: flex; flex-wrap: wrap; gap: 6px; }
+      .node-choice { padding: 6px 8px; border: 1px solid var(--line); border-radius: 8px; color: #615e6d; background: #fff; cursor: pointer; font-size: 10px; }
+      .node-choice[aria-pressed="true"] { color: #5949bc; border-color: #c9c1f5; background: #f3f1ff; }
+      .footer {
+        display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 38px;
+        padding: 7px 18px; border-top: 1px solid var(--line); color: var(--muted); background: #fff; font-size: 10px;
+      }
+      .footer strong { color: #615d70; font-weight: 700; }
+      .connection { display: flex; align-items: center; gap: 6px; white-space: nowrap; }
+      .connection-dot { width: 7px; height: 7px; border-radius: 50%; background: #c2bfcb; }
+      .connection[data-connected="true"] .connection-dot { background: #37a68d; box-shadow: 0 0 0 3px #37a68d1c; }
+      @media (max-width: 820px) {
+        .workspace { grid-template-columns: minmax(0, 1fr) 290px; }
+        .topbar { padding-inline: 13px; }
+        .footer { padding-inline: 12px; }
+      }
+      @media (max-width: 640px) {
+        .workspace { grid-template-columns: 1fr; grid-template-rows: minmax(260px, 44%) minmax(260px, 1fr); }
+        .detail { padding: 15px; border-top: 1px solid var(--line); border-left: 0; }
+        .brand-subtitle, .toolbar .fit-label, .footer .footer-detail { display: none; }
+        .topbar { min-height: 58px; }
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          color-scheme: dark; --ink: #f0eef7; --muted: #a19daf; --line: #363342; --paper: #211f2a;
+          --panel: #292733; --purple-soft: #37314f;
+        }
+        .canvas-wrap { background-color: #24222d; }
+        .tool-button, .action-secondary, .node-choice { color: var(--ink); background: #302e3b; }
+        .tool-button:hover, .action-secondary:hover { background: #3a3748; }
+        #change-request, .paths li { color: var(--ink); border-color: #403d4b; background: #25232e; }
+        .paths li { color: #b5b1c2; }
+        .footer { background: var(--panel); }
+        .canvas-tip { color: #bab7c4; border-color: #494653; background: #292733e8; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="shell">
+      <header class="topbar">
+        <div class="brand">
+          <div class="brand-mark" aria-hidden="true">V</div>
+          <div>
+            <h1 class="brand-title">插件架构画布</h1>
+            <p class="brand-subtitle">探索能力之间如何协作，选择节点开始调整</p>
+          </div>
+        </div>
+        <div class="toolbar" aria-label="画布控制">
+          <button class="tool-button" id="zoom-out" type="button" aria-label="缩小">−</button>
+          <span class="zoom-label" id="zoom-level">100%</span>
+          <button class="tool-button" id="zoom-in" type="button" aria-label="放大">+</button>
+          <button class="tool-button" id="toggle-display-mode" type="button" hidden>展开画布</button>
+          <button class="tool-button" id="fit-canvas" type="button"><span class="fit-label">适应画布</span><span aria-hidden="true">⌗</span></button>
+        </div>
+      </header>
+      <main class="workspace">
+        <section class="canvas-wrap" aria-label="插件模块关系图">
+          <canvas id="architecture-canvas" aria-label="可平移和缩放的插件架构图"></canvas>
+          <div class="canvas-tip">拖动画布浏览 · 滚轮缩放 · 选择节点查看详情</div>
+        </section>
+        <aside class="detail" aria-live="polite">
+          <span class="eyebrow">当前选择</span>
+          <span class="kind-pill" id="node-kind"></span>
+          <h2 id="node-title">加载架构…</h2>
+          <p class="summary" id="node-summary"></p>
+          <p class="path-title">相关模块</p>
+          <ul class="paths" id="node-paths"></ul>
+          <div class="divider"></div>
+          <label class="prompt-label" for="change-request">你希望如何调整？</label>
+          <p class="prompt-hint">描述不满意之处或希望的行为。提交后会回到对话，由现有编码流程处理。</p>
+          <textarea id="change-request" maxlength="4000" placeholder="例如：让规划 Skill 在生成任务前检查仓库内已有规范，减少重复任务。"></textarea>
+          <div class="actions">
+            <button class="action action-primary" id="submit-request" type="button" disabled>发送到对话</button>
+            <button class="action action-secondary" id="copy-request" type="button">复制请求</button>
+          </div>
+          <p id="request-status" role="status" aria-live="polite"></p>
+          <div class="capability-section">
+            <p class="capability-heading">快速选择能力</p>
+            <div class="capability-list" id="capability-list"></div>
+          </div>
+        </aside>
+      </main>
+      <footer class="footer">
+        <span><strong>架构图</strong> 来自插件声明 · 此界面只读源码，不会直接写入文件</span>
+        <span class="connection" id="connection-state" data-connected="false"><i class="connection-dot"></i><span>连接中…</span></span>
+      </footer>
+    </div>
+    <script id="architecture-data" type="application/json"></script>
+    <script type="module" src="./architecture-canvas.js"></script>
+  </body>
+</html>
