@@ -22,7 +22,7 @@ export function renderArchitectureResource(
     .replace(TEMPLATE_MARKER, () => `<script id="architecture-data" type="application/json">${safeData}</script>`)
     .replace(BUNDLE_MARKER, () => `<script type="module">${safeBundle}</script>`);
   assertWithinLimit(html, "MCP App 资源");
-  if (html.includes(ICON_MARKER) || html.includes(TEMPLATE_MARKER) || html.includes(BUNDLE_MARKER) || !html.includes("Vibe Coding Assistant")) {
+  if (html.includes(ICON_MARKER) || html.includes(TEMPLATE_MARKER) || html.includes(BUNDLE_MARKER) || !html.includes("AkiCode")) {
     throw new Error("MCP App 模板缺少必要占位符或页面标识");
   }
   return html;

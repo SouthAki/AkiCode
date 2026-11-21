@@ -31,9 +31,16 @@ Codex 用户
                          ├── OpenSpec-compatible plans + .git/info/exclude
                          ├── append-only iteration records
                          └── architecture / requirements / Git UI resources
+
+插件分发
+  ├── package-plugin.mjs ─────> 本地 Codex 插件目录（含生产依赖）
+  └── package-plugin-npm.mjs ─> npm 包（完整插件 + 自包含 MCP 入口）
+                                  └── Codex marketplace source: npm
 ```
 
 Skills 暴露用户工作流并保留模型判断；MCP 将路径校验、文件清单、Git Diff、用户指定 Git 操作、架构图、需求表和本地状态存取固定为可复用操作。MCP 服务只在本机运行、无网络访问。读取工具拒绝符号链接并限制文件大小；写入工具不覆盖用户文件。规划和迭代摘要通过 Git 私有 exclude 默认保持本地。Git App 只操作服务端重新核验的仓库内变更路径，提交先核对预览的暂存区状态，不 push；界面消息由用户主动提交，后续代码变更沿用 `vibe-code` 工作流。
+
+本地包和 npm 包共享插件清单、Skills 与资源。npm 包额外将 MCP server 及其运行时依赖打入 Node ESM 入口，避免 registry 安装依赖 lifecycle 脚本或包内 `node_modules`；静态 UI 和图标保持在插件根的资源路径下。
 
 `plugin.json` 的 `extensions.com.openai.onboardingSkill` 将 setup 导航连接到独立的 `vibe-onboarding` Skill。该 Skill 介绍实际能力并交接到现有工作流，不增加 MCP 工具，也不在引导阶段读取或写入仓库。
 

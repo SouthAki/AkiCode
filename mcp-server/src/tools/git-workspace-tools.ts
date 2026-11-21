@@ -6,7 +6,7 @@ import { readBundledAppHtml } from "../core/app-resource.js";
 import { readGitDiff } from "../core/git.js";
 import { failureResult, successResult } from "../shared/errors.js";
 
-const resourceUri = "ui://vibe-coding-assistant/git-workspace-v1.html";
+const resourceUri = "ui://akicode/git-workspace-v1.html";
 const bundleUrl = new URL("../ui/git-workspace.js", import.meta.url);
 const templateUrl = new URL("../ui/git-workspace.html", import.meta.url);
 const statusOutput = z.object({

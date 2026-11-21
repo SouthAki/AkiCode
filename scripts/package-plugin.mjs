@@ -41,6 +41,7 @@ async function copyPluginFiles(stageRoot) {
   const stagedServer = join(stageRoot, "mcp-server");
   await mkdir(stagedServer, { recursive: true });
   await cp(join(serverRoot, "dist"), join(stagedServer, "dist"), { recursive: true });
+  await cp(join(workspaceRoot, "artifacts", ".build", "mcp-server", "dist", "tools", "index.js"), join(stagedServer, "dist", "tools", "index.js"));
   await cp(join(serverRoot, "package.json"), join(stagedServer, "package.json"));
   await cp(join(serverRoot, "pnpm-lock.yaml"), join(stagedServer, "pnpm-lock.yaml"));
 }

@@ -32,6 +32,8 @@ pnpm run typecheck
 pnpm run build
 ```
 
-The generated `dist/index.js` is the local MCP entry point referenced by the plugin's root `mcp.json`. The build also creates browser bundles and copies all three MCP Apps templates under `dist/ui/`; resources inline the bundles without external network requests. Build after source changes. The server is intended for the Codex desktop local executor.
+The build writes its self-contained MCP bundle to the ignored workspace cache at `artifacts/.build/mcp-server/dist/tools/index.js`; the package tasks copy it to the plugin's `mcp-server/dist/tools/index.js` entry point. That location preserves relative URLs used to load UI templates and the plugin icon. The build also creates browser bundles and copies all three MCP Apps templates under `dist/ui/`; resources inline the bundles without external network requests. Build after source changes. The server is intended for the Codex desktop local executor.
 
 From this directory, `pnpm run package` builds the server and produces a self-contained plugin directory under the workspace `artifacts/` folder, including production dependencies for the local stdio server. The package contains only the runtime manifest and no development dependencies. The command refuses to replace an existing artifact.
+
+Run `pnpm run package:npm` to build a registry-ready complete plugin under `artifacts/npm/`. This output has a root npm manifest, bundled server entry, skills, UI resources, and assets, so the npm marketplace installer does not need lifecycle scripts or nested `node_modules`.

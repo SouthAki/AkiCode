@@ -72,7 +72,7 @@ let canvasTheme = readCanvasTheme();
 let lastCanvasSize: { width: number; height: number } | null = null;
 const resizeObserver = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(resizeCanvas);
 
-const app = new App({ name: "Vibe Coding Assistant Architecture Canvas", version: "0.2.4" }, {});
+const app = new App({ name: "AkiCode Architecture Canvas", version: "0.2.4" }, {});
 
 function readGraph(): ArchitectureGraph {
   const source = document.querySelector<HTMLScriptElement>("#architecture-data")?.textContent ?? "{}";

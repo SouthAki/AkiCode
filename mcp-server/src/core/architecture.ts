@@ -22,10 +22,10 @@ export interface ArchitectureGraph {
   edges: ArchitectureEdge[];
 }
 
-export const ARCHITECTURE_RESOURCE_URI = "ui://vibe-coding-assistant/architecture-canvas-v1.html";
+export const ARCHITECTURE_RESOURCE_URI = "ui://akicode/architecture-canvas-v1.html";
 
 export const ARCHITECTURE_GRAPH: ArchitectureGraph = {
-  title: "Vibe Coding Assistant",
+  title: "AkiCode",
   nodes: [
     {
       id: "user",
@@ -204,8 +204,8 @@ export const ARCHITECTURE_GRAPH: ArchitectureGraph = {
       id: "plugin-package",
       title: "插件清单与打包",
       kind: "boundary",
-      summary: "清单连接 Skills 和 MCP server；打包生成自包含本地安装目录。",
-      paths: ["plugin.json", "mcp.json", "scripts/package-plugin.mjs"],
+      summary: "清单连接 Skills 和 MCP server；打包器生成本地安装目录或 npm registry 插件包。",
+      paths: ["plugin.json", "mcp.json", "scripts/package-plugin.mjs", "scripts/package-plugin-npm.mjs", "scripts/npm-package.json"],
       x: 1010,
       y: 615
     }

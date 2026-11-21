@@ -5,10 +5,10 @@
   },
   "plugins": [
     {
-      "name": "vibe-coding-assistant",
+      "name": "akicode",
       "source": {
         "source": "local",
-        "path": "./artifacts/vibe-coding-assistant-0.2.9"
+        "path": "./artifacts/akicode-0.2.9"
       },
       "policy": {
         "installation": "AVAILABLE",

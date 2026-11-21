@@ -1,5 +1,5 @@
 {
-  "name": "@vibe-coding-assistant/local-tools",
+  "name": "@southaki/akicode-local-tools",
   "version": "0.1.0",
   "private": true,
   "packageManager": "pnpm@10.12.1",
@@ -8,10 +8,11 @@
     "node": ">=20"
   },
   "scripts": {
-    "build": "tsc --noEmit false --declaration false --outDir dist && esbuild src/ui/architecture-canvas.ts --bundle --format=esm --platform=browser --target=es2022 --minify --outfile=dist/ui/architecture-canvas.js && esbuild src/ui/git-workspace.ts --bundle --format=esm --platform=browser --target=es2022 --minify --outfile=dist/ui/git-workspace.js && esbuild src/ui/requirements-decisions.ts --bundle --format=esm --platform=browser --target=es2022 --minify --outfile=dist/ui/requirements-decisions.js && cp ui/architecture-canvas.html ui/git-workspace.html ui/requirements-decisions.html dist/ui/",
+    "build": "tsc --noEmit false --declaration false --outDir dist && esbuild src/index.ts --bundle --format=esm --platform=node --target=node20 --outfile=../artifacts/.build/mcp-server/dist/tools/index.js && esbuild src/ui/architecture-canvas.ts --bundle --format=esm --platform=browser --target=es2022 --minify --outfile=dist/ui/architecture-canvas.js && esbuild src/ui/git-workspace.ts --bundle --format=esm --platform=browser --target=es2022 --minify --outfile=dist/ui/git-workspace.js && esbuild src/ui/requirements-decisions.ts --bundle --format=esm --platform=browser --target=es2022 --minify --outfile=dist/ui/requirements-decisions.js && cp ui/architecture-canvas.html ui/git-workspace.html ui/requirements-decisions.html dist/ui/",
     "typecheck": "tsc --noEmit",
     "check:size": "node check-size.mjs",
-    "package": "node ../scripts/package-plugin.mjs"
+    "package": "node ../scripts/package-plugin.mjs",
+    "package:npm": "node ../scripts/package-plugin-npm.mjs"
   },
   "dependencies": {
     "@modelcontextprotocol/ext-apps": "^1.7.5",

@@ -4,7 +4,7 @@
     "vibe-coding-local": {
       "type": "stdio",
       "command": "node",
-      "args": ["${PLUGIN_ROOT}/mcp-server/dist/index.js"],
+      "args": ["${PLUGIN_ROOT}/mcp-server/dist/tools/index.js"],
       "cwd": "${PLUGIN_ROOT}"
     }
   }

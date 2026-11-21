@@ -48,13 +48,16 @@
 │   ├── check-size.mjs           # TypeScript AST 文件/函数行数限制
 │   ├── dist/                    # 编译后的本地 server，随插件提供
 ├── scripts/
-│   └── package-plugin.mjs        # 生成带生产依赖的自包含插件目录
+│   ├── package-plugin.mjs        # 生成本地安装用的自包含插件目录
+│   ├── package-plugin-npm.mjs    # 生成可从 npm registry 安装的完整插件
+│   └── npm-package.json          # npm 发布名与描述
 ├── .vibe/                       # 本地迭代记录，不提交
 ├── openspec/changes/            # 本地生成的规划产物，不提交
 ├── hooks/                       # 预留的可选生命周期 hooks
 ├── assets/                      # 插件级静态资源
 └── docs/
-    └── design-reference.md      # 参考项目与本插件的边界
+    ├── design-reference.md      # 参考项目与本插件的边界
+    └── npm-distribution.md      # npm 发布和 Codex marketplace 安装
 ```
 
 ### 能力边界
@@ -82,7 +85,11 @@
 
 三个界面使用 MCP Apps 标准的 `ui://` 资源与宿主 iframe。需求和架构请求只会在用户点击发送后作为跟进消息回到对话；如果宿主没有消息能力，界面提供复制方式。界面不加载外部资源或调用网络服务。Git 工作区对暂存与提交调用本地 MCP 工具，提交前要求二次确认且核对暂存区指纹。
 
-本地 stdio MCP 需要 Codex 桌面端的本机执行环境。首次开发或改动服务依赖后，在 `mcp-server/` 中运行 `pnpm install` 和 `pnpm run build`，生成随插件加载的 `dist/index.js` 及三个 App 资源。发布或本地安装时可运行 `pnpm --dir mcp-server run package`，生成版本化的自包含插件目录。
+本地 stdio MCP 需要 Codex 桌面端的本机执行环境。首次开发或改动服务依赖后，在 `mcp-server/` 中运行 `pnpm install` 和 `pnpm run build`，构建自包含 MCP bundle 到忽略的 `artifacts/.build/`，并生成三个 App 资源。发布或本地安装时可运行 `pnpm --dir mcp-server run package`，把 bundle 放进插件目录并生成版本化的本地包。
+
+### npm 分发
+
+完整的 npm 插件包保留根目录 `plugin.json`、`mcp.json`、Skills 和资源，并将 MCP server 打成自包含 Node ESM 入口。生成目录包含可直接发布的 `package.json`，不需要 npm 安装时运行 lifecycle 脚本或携带 `node_modules`。包名和描述配置在 `scripts/npm-package.json`，版本与 `plugin.json` 同步。详细发布和 Codex marketplace 安装步骤见 [npm 分发指南](docs/npm-distribution.md)。
 
 ### 本地 Debug 安装
 
@@ -91,7 +98,7 @@
 ```bash
 pnpm --dir mcp-server run package
 codex plugin marketplace add .
-codex plugin add vibe-coding-assistant@vibe-coding-debug
+codex plugin add akicode@vibe-coding-debug
 ```
 
 用 `codex plugin list` 确认插件状态为 `installed, enabled`。更新代码后重新生成包，再通过 Codex 插件目录刷新或重新安装；首次使用时开启新会话，让 Codex 加载最新 Skills 和 MCP 配置。
@@ -103,6 +110,7 @@ pnpm run check:size
 pnpm run typecheck
 pnpm run build
 pnpm run package
+pnpm run package:npm
 ```
 
 `check:size` 强制 MCP 源码与打包脚本少于 1,000 行、函数/方法不超过 100 行。使用 `pnpm-lock.yaml` 锁定依赖；锁文件属于生成的依赖数据，不由 agent 手工编辑。打包目录已存在时会停止，避免覆盖用户文件。

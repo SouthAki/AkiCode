@@ -2,7 +2,7 @@ import { registerAppResource, registerAppTool, RESOURCE_MIME_TYPE } from "@model
 import { z } from "zod";
 import { readBundledAppHtml } from "../core/app-resource.js";
 import { successResult } from "../shared/errors.js";
-const resourceUri = "ui://vibe-coding-assistant/requirements-decisions-v1.html";
+const resourceUri = "ui://akicode/requirements-decisions-v1.html";
 const bundleUrl = new URL("../ui/requirements-decisions.js", import.meta.url);
 const templateUrl = new URL("../ui/requirements-decisions.html", import.meta.url);
 const question = z.object({
